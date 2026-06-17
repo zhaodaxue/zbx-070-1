@@ -7,11 +7,26 @@ import { ApiResponse } from '../../shared/types.js';
 
 const router = Router();
 
+router.get('/user/:nickname/participations', (req: Request, res: Response<ApiResponse<unknown>>) => {
+  try {
+    const nickname = decodeURIComponent(req.params.nickname).trim();
+    if (!nickname) {
+      return res.status(400).json({ success: false, error: '昵称不能为空' });
+    }
+    const list = participationRepository.findByNickname(nickname);
+    res.json({ success: true, data: list });
+  } catch (err) {
+    console.error('[API] /user/:nickname/participations error:', err);
+    res.status(500).json({ success: false, error: err instanceof Error ? err.message : '服务器错误' });
+  }
+});
+
 router.get('/', (_req: Request, res: Response<ApiResponse<ReturnType<typeof listGroups>>>) => {
   try {
     const groups = listGroups();
     res.json({ success: true, data: groups });
   } catch (err) {
+    console.error('[API] GET /api/groups error:', err);
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : '服务器错误' });
   }
 });
@@ -25,6 +40,7 @@ router.post('/', (req: Request, res: Response<ApiResponse<unknown>>) => {
     const group = createValidatedGroup(validation.data);
     res.status(201).json({ success: true, data: group });
   } catch (err) {
+    console.error('[API] POST /api/groups error:', err);
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : '服务器错误' });
   }
 });
@@ -37,6 +53,7 @@ router.get('/:id', (req: Request, res: Response<ApiResponse<unknown>>) => {
     }
     res.json({ success: true, data: detail });
   } catch (err) {
+    console.error('[API] GET /api/groups/:id error:', err);
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : '服务器错误' });
   }
 });
@@ -53,19 +70,7 @@ router.post('/:id/join', (req: Request, res: Response<ApiResponse<unknown>>) => 
     }
     res.status(201).json({ success: true, data: result.data });
   } catch (err) {
-    res.status(500).json({ success: false, error: err instanceof Error ? err.message : '服务器错误' });
-  }
-});
-
-router.get('/user/:nickname/participations', (req: Request, res: Response<ApiResponse<unknown>>) => {
-  try {
-    const nickname = decodeURIComponent(req.params.nickname).trim();
-    if (!nickname) {
-      return res.status(400).json({ success: false, error: '昵称不能为空' });
-    }
-    const list = participationRepository.findByNickname(nickname);
-    res.json({ success: true, data: list });
-  } catch (err) {
+    console.error('[API] POST /api/groups/:id/join error:', err);
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : '服务器错误' });
   }
 });

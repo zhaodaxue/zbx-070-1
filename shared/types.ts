@@ -1,15 +1,27 @@
 export type GroupStatus = 'collecting' | 'success' | 'failed';
 
 export const FISH_TYPES = [
-  '带鱼', '黄鱼', '鲳鱼', '鲈鱼', '鲫鱼',
-  '鲤鱼', '草鱼', '黑鱼', '多宝鱼', '石斑鱼',
-  '三文鱼', '金枪鱼', '秋刀鱼', '鲅鱼', '鳗鱼'
+  '带鱼',
+  '黄鱼',
+  '鲳鱼',
+  '鲈鱼',
+  '鲫鱼',
+  '鲤鱼',
+  '草鱼',
+  '黑鱼',
+  '多宝鱼',
+  '石斑鱼',
+  '三文鱼',
+  '金枪鱼',
+  '秋刀鱼',
+  '鲅鱼',
+  '鳗鱼',
 ] as const;
 
-export type FishType = typeof FISH_TYPES[number];
+export type FishType = (typeof FISH_TYPES)[number];
 
 export const PICKUP_POINTS = ['甲', '乙', '丙'] as const;
-export type PickupPoint = typeof PICKUP_POINTS[number];
+export type PickupPoint = (typeof PICKUP_POINTS)[number];
 
 export interface Group {
   id: string;

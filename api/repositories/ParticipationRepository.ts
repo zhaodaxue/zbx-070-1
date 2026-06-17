@@ -1,4 +1,4 @@
-import { getDatabase, generateId, persistDatabase } from '../db/index.js';
+import { queryAll, queryOne, exists, execute, generateId } from '../db/index.js';
 import { Participation, UserParticipation, GroupStatus, FishType, PickupPoint } from '../../shared/types.js';
 
 interface ParticipationRow {
@@ -24,7 +24,7 @@ function rowToParticipation(row: ParticipationRow): Participation {
     id: row.id,
     groupId: row.group_id,
     nickname: row.nickname,
-    quantity: row.quantity,
+    quantity: Number(row.quantity),
     createdAt: row.created_at,
   };
 }
@@ -34,16 +34,16 @@ function rowToUserParticipation(row: UserParticipationRow): UserParticipation {
     id: row.id,
     groupId: row.group_id,
     nickname: row.nickname,
-    quantity: row.quantity,
+    quantity: Number(row.quantity),
     createdAt: row.created_at,
     group: {
       id: row.group_id,
       fishType: row.g_fish_type as FishType,
       initiator: row.g_initiator,
-      minQuantity: row.g_min_quantity,
+      minQuantity: Number(row.g_min_quantity),
       deadline: row.g_deadline,
       pickupPoint: row.g_pickup_point as PickupPoint,
-      currentQuantity: row.g_current_quantity,
+      currentQuantity: Number(row.g_current_quantity),
       status: row.g_status as GroupStatus,
     },
   };
@@ -55,43 +55,40 @@ export class ParticipationRepository {
     nickname: string;
     quantity: number;
   }): Participation {
-    const db = getDatabase();
     const id = generateId();
     const now = new Date().toISOString();
-    const stmt = db.prepare(
-      'INSERT INTO participations (id, group_id, nickname, quantity, created_at) VALUES (?, ?, ?, ?, ?)'
+    execute(
+      'INSERT INTO participations (id, group_id, nickname, quantity, created_at) VALUES (?, ?, ?, ?, ?)',
+      [id, params.groupId, params.nickname, params.quantity, now]
     );
-    stmt.run(id, params.groupId, params.nickname, params.quantity, now);
-    persistDatabase();
-    return this.findById(id)!;
+    const p = this.findById(id);
+    if (!p) throw new Error('Failed to create participation');
+    return p;
   }
 
   findById(id: string): Participation | null {
-    const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM participations WHERE id = ?');
-    const result = stmt.getAsObject(id) as ParticipationRow | undefined;
-    return result ? rowToParticipation(result) : null;
+    const row = queryOne<ParticipationRow>('SELECT * FROM participations WHERE id = ?', [id]);
+    return row ? rowToParticipation(row) : null;
   }
 
   findByGroupId(groupId: string): Participation[] {
-    const db = getDatabase();
-    const stmt = db.prepare('SELECT * FROM participations WHERE group_id = ? ORDER BY created_at ASC');
-    const rows = stmt.getAsObject(groupId) as unknown as ParticipationRow[];
-    if (!Array.isArray(rows)) return [];
+    const rows = queryAll<ParticipationRow>(
+      'SELECT * FROM participations WHERE group_id = ? ORDER BY created_at ASC',
+      [groupId]
+    );
     return rows.map(rowToParticipation);
   }
 
   existsByGroupAndNickname(groupId: string, nickname: string): boolean {
-    const db = getDatabase();
-    const stmt = db.prepare('SELECT 1 FROM participations WHERE group_id = ? AND nickname = ? LIMIT 1');
-    const result = stmt.getAsObject(groupId, nickname);
-    return result !== undefined && result !== null;
+    return exists(
+      'SELECT 1 FROM participations WHERE group_id = ? AND nickname = ? LIMIT 1',
+      [groupId, nickname]
+    );
   }
 
   findByNickname(nickname: string): UserParticipation[] {
-    const db = getDatabase();
-    const stmt = db.prepare(
-      `SELECT p.*,
+    const rows = queryAll<UserParticipationRow>(
+      `SELECT p.id, p.group_id, p.nickname, p.quantity, p.created_at,
               g.initiator AS g_initiator,
               g.fish_type AS g_fish_type,
               g.min_quantity AS g_min_quantity,
@@ -102,10 +99,9 @@ export class ParticipationRepository {
        FROM participations p
        INNER JOIN groups g ON g.id = p.group_id
        WHERE p.nickname = ?
-       ORDER BY p.created_at DESC`
+       ORDER BY p.created_at DESC`,
+      [nickname]
     );
-    const rows = stmt.getAsObject(nickname) as unknown as UserParticipationRow[];
-    if (!Array.isArray(rows)) return [];
     return rows.map(rowToUserParticipation);
   }
 }

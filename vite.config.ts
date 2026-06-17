@@ -32,9 +32,10 @@ export default defineConfig({
     },
   },
   server: {
+    port: 5183,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3001',  // 对齐 server.ts 硬编码端口
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
