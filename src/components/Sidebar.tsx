@@ -3,7 +3,11 @@ import { Search, X, Fish, Clock } from 'lucide-react';
 import { useAppStore } from '../store/index.js';
 import { formatDateTime, getStatusLabel, getStatusClass, cn } from '../lib/utils.js';
 
-export default function Sidebar() {
+interface Props {
+  onLocateGroup?: (groupId: string) => void;
+}
+
+export default function Sidebar({ onLocateGroup }: Props) {
   const { userNickname, setUserNickname, userRecords, userRecordsLoading, fetchUserRecords, clearUserRecords } =
     useAppStore();
   const [inputValue, setInputValue] = useState(userNickname);
@@ -74,7 +78,11 @@ export default function Sidebar() {
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
               {userRecords.map((r) => (
-                <div key={r.id} className="p-3 rounded-xl bg-cream-50 border border-cream-200">
+                <div
+                  key={r.id}
+                  onClick={() => onLocateGroup?.(r.group.id)}
+                  className="p-3 rounded-xl bg-cream-50 border border-cream-200 cursor-pointer hover:bg-cream-100 hover:border-ocean-200 transition-colors"
+                >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <Fish size={14} className="text-coral-500" />

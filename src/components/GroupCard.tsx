@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Clock, MapPin, User, Fish } from 'lucide-react';
 import { Group } from '@shared/types.js';
 import { formatDateTime, getCountdown, getStatusLabel, getStatusClass, cn } from '../lib/utils.js';
+import { useState, useEffect } from 'react';
 
 interface Props {
   group: Group;
@@ -10,10 +11,19 @@ interface Props {
 export default function GroupCard({ group }: Props) {
   const navigate = useNavigate();
   const progress = Math.min(100, (group.currentQuantity / group.minQuantity) * 100);
-  const countdown = getCountdown(group.deadline);
+  const [countdown, setCountdown] = useState(() => getCountdown(group.deadline));
+
+  useEffect(() => {
+    if (countdown.expired) return;
+    const t = setInterval(() => {
+      setCountdown(getCountdown(group.deadline));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [group.deadline, countdown.expired]);
 
   return (
     <div
+      id={`group-card-${group.id}`}
       className={cn(
         'card-hover bg-white rounded-2xl shadow-card hover:shadow-cardHover overflow-hidden border border-cream-200',
         group.status === 'success' && 'ring-2 ring-green-200',
